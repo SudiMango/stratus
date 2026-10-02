@@ -5,23 +5,34 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
+
+	"github.com/SudiMango/stratus/util/config"
 )
 
 func main() {
-	target, err := url.Parse("http://localhost:3000")
+	cfg, err := config.GetConfig("config.yaml")
 	if err != nil {
-		log.Fatalf("Invalid target url: %v", err)
+		log.Fatalf("Error loading config file: %v", err)
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(target)
+	mux := http.NewServeMux()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Proxying request: %s %s -> %s", r.Method, r.URL.Path, target.String())
-		proxy.ServeHTTP(w, r)
-	})
+	for _, route := range cfg.Routes {
+		target, err := url.Parse(config.BuildURL(route))
+		if err != nil {
+			log.Fatalf("Invalid target url for %q: %v", route.Path, err)
+		}
 
-	log.Println("Reverse proxy running on port 9090")
-	if err := http.ListenAndServe(":9090", nil); err != nil {
+		proxy := httputil.NewSingleHostReverseProxy(target)
+		mux.HandleFunc(route.Path, func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("Proxying request: %s %s %s -> %s", r.Method, r.URL.Path, r.URL.RawQuery, target.String())
+			proxy.ServeHTTP(w, r)
+		})
+	}
+
+	log.Printf("Reverse proxy running on port %s", strconv.Itoa(cfg.Proxy.Port))
+	if err := http.ListenAndServe(":"+strconv.Itoa(cfg.Proxy.Port), mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
