@@ -2,12 +2,20 @@ proxy:
   port: 9090
 
 routes:
-  - host: "localhost"
+  - host: "app.example.com"
+    destination: "localhost"
     port: 3000
     path: "/"
     tls: false
 
-  - host: "localhost"
+  - host: "app.example.com"
+    destination: "localhost"
     port: 4000
-    path: "/api"
+    path: "/test"
+    tls: false
+
+  - host: "api.example.com"
+    destination: "localhost"
+    port: 5000
+    path: "/"
     tls: false

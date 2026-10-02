@@ -5,10 +5,11 @@ type Proxy struct {
 }
 
 type Route struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-	Path string `yaml:"path"`
-	TLS  bool   `yaml:"tls"`
+	Host        string `yaml:"host"`
+	Destination string `yaml:"destination"`
+	Port        int    `yaml:"port"`
+	Path        string `yaml:"path"`
+	TLS         bool   `yaml:"tls"`
 }
 
 type Config struct {

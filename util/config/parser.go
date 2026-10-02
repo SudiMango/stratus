@@ -32,7 +32,7 @@ func BuildURL(route Route) string {
 	}
 
 	target.WriteString(prefix)
-	target.WriteString(route.Host)
+	target.WriteString(route.Destination)
 	target.WriteString(":")
 	target.WriteString(strconv.Itoa(route.Port))
 

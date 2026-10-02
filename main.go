@@ -25,8 +25,8 @@ func main() {
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(target)
-		mux.HandleFunc(route.Path, func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("Proxying request: %s %s %s -> %s", r.Method, r.URL.Path, r.URL.RawQuery, target.String())
+		mux.HandleFunc(route.Host+route.Path, func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("Proxying request: %s %s %s %s -> %s", r.Method, r.Host, r.URL.Path, r.URL.RawQuery, target.String())
 			proxy.ServeHTTP(w, r)
 		})
 	}
