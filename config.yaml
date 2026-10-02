@@ -1,0 +1,13 @@
+proxy:
+  port: 9090
+
+routes:
+  - host: "localhost"
+    port: 3000
+    path: "/"
+    tls: false
+
+  - host: "localhost"
+    port: 4000
+    path: "/api"
+    tls: false
