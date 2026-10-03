@@ -24,7 +24,12 @@ func main() {
 			log.Fatalf("Invalid target url for %q: %v", route.Path, err)
 		}
 
-		proxy := httputil.NewSingleHostReverseProxy(target)
+		proxy := &httputil.ReverseProxy{
+			Rewrite: func(r *httputil.ProxyRequest) {
+				r.SetURL(target)
+				r.SetXForwarded()
+			},
+		}
 		mux.HandleFunc(route.Host+route.Path, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Proxying request: %s %s %s %s -> %s", r.Method, r.Host, r.URL.Path, r.URL.RawQuery, target.String())
 			proxy.ServeHTTP(w, r)

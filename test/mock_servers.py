@@ -20,6 +20,7 @@ class MockHandler(BaseHTTPRequestHandler):
                 "method": self.command,
                 "host": self.headers.get("Host"),
                 "path": self.path,
+                "headers": dict(self.headers),
             },
             indent=2,
         ).encode()
