@@ -6,8 +6,7 @@ proxy:
 
   https:
     enabled: true
-    port: 8443
-    cert: "cert.pem"
+    port: 8880
     key: "key.pem"
 
 routes:
@@ -20,7 +19,7 @@ routes:
   - host: "app.example.com"
     destination: "localhost"
     port: 4000
-    path: "/test"
+    path: "/"
     tls: false
 
   - host: "api.example.com"

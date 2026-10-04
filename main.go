@@ -18,7 +18,7 @@ func main() {
 		log.Fatalf("Error loading config file: %v", err)
 	}
 
-	err = config.ValidateConfig(cfg)
+	err = cfg.Validate()
 	if err != nil {
 		log.Fatalf("Error validating config: %v", err)
 	}

@@ -1,5 +1,7 @@
 package config
 
+// Proxy configs
+
 type Http struct {
 	Enabled         bool `yaml:"enabled"`
 	Port            int  `yaml:"port"`
@@ -18,6 +20,8 @@ type Proxy struct {
 	Https Https `yaml:"https"`
 }
 
+// Route configs
+
 type Route struct {
 	Host        string `yaml:"host"`
 	Destination string `yaml:"destination"`
@@ -26,7 +30,11 @@ type Route struct {
 	TLS         bool   `yaml:"tls"`
 }
 
+// All configs
+
+type Routes []Route
+
 type Config struct {
-	Proxy  Proxy   `yaml:"proxy"`
-	Routes []Route `yaml:"routes"`
+	Proxy  Proxy  `yaml:"proxy"`
+	Routes Routes `yaml:"routes"`
 }
