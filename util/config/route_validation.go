@@ -34,13 +34,13 @@ func (rs Routes) Validate() error {
 
 	for i, r := range rs {
 		if err := r.Validate(); err != nil {
-			errs = append(errs, fmt.Errorf("route %d: %w", i, err))
+			errs = append(errs, fmt.Errorf("\t[Routes] route index %d: %w", i, err))
 		}
 
 		key := strings.ToLower(r.Host) + r.Path
 
 		if prev, exists := seen[key]; exists {
-			errs = append(errs, fmt.Errorf("route index %d conflicts with route index %d", i, prev))
+			errs = append(errs, fmt.Errorf("\t[Routes] route index %d conflicts with route index %d", i, prev))
 		}
 
 		seen[key] = i

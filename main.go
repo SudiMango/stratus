@@ -20,7 +20,7 @@ func main() {
 
 	err = cfg.Validate()
 	if err != nil {
-		log.Fatalf("Error validating config: %v", err)
+		log.Fatalf("Error validating config: \n%v", err)
 	}
 
 	mux := http.NewServeMux()

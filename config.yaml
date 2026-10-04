@@ -25,5 +25,5 @@ routes:
   - host: "api.example.com"
     destination: "localhost"
     port: 5000
-    path: "/"
+    path: "test"
     tls: false
