@@ -18,6 +18,11 @@ func main() {
 		log.Fatalf("Error loading config file: %v", err)
 	}
 
+	err = config.ValidateConfig(cfg)
+	if err != nil {
+		log.Fatalf("Error validating config: %v", err)
+	}
+
 	mux := http.NewServeMux()
 	httpHandler := http.Handler(mux)
 	allowedHosts := make(map[string]struct{})
