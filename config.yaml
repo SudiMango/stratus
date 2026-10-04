@@ -1,5 +1,14 @@
 proxy:
-  port: 9090
+  http:
+    enabled: true
+    port: 8880
+    redirect_to_https: true
+
+  https:
+    enabled: true
+    port: 8443
+    cert: "cert.pem"
+    key: "key.pem"
 
 routes:
   - host: "app.example.com"
