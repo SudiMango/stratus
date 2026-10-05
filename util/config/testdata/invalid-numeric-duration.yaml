@@ -1,0 +1,9 @@
+proxy:
+  read_timeout: 30
+  http:
+    enabled: true
+    port: 8080
+  https:
+    enabled: false
+
+routes: []
