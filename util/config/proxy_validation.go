@@ -17,6 +17,10 @@ func (p Proxy) Validate() error {
 		errs = append(errs, errors.New("\t[Proxy] HTTP cannot redirect when HTTPS is disabled"))
 	}
 
+	if p.Http.RedirectToHttps && !p.Http.Enabled {
+		errs = append(errs, errors.New("\t[Proxy] HTTP redirect cannot be enabled when HTTP is disabled"))
+	}
+
 	if p.Http.Enabled &&
 		p.Https.Enabled &&
 		p.Http.Port == p.Https.Port {

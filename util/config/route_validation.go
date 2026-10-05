@@ -3,17 +3,18 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 )
 
 func (r Route) Validate() error {
 	var errs []error
 
-	if r.Host == "" {
+	if strings.TrimSpace(r.Host) == "" {
 		errs = append(errs, errors.New("host is required"))
 	}
 
-	if r.Destination == "" {
+	if strings.TrimSpace(r.Destination) == "" {
 		errs = append(errs, errors.New("destination is required"))
 	}
 
@@ -23,6 +24,12 @@ func (r Route) Validate() error {
 
 	if !strings.HasPrefix(r.Path, "/") {
 		errs = append(errs, errors.New("path must begin with /"))
+	} else {
+		pattern := NormalizeHost(r.Host) + r.Path
+
+		if err := registerPattern(http.NewServeMux(), pattern); err != nil {
+			errs = append(errs, fmt.Errorf("path pattern is invalid: %w", err))
+		}
 	}
 
 	return errors.Join(errs...)
@@ -30,21 +37,35 @@ func (r Route) Validate() error {
 
 func (rs Routes) Validate() error {
 	var errs []error
-	seen := make(map[string]int)
+	mux := http.NewServeMux()
 
 	for i, r := range rs {
 		if err := r.Validate(); err != nil {
 			errs = append(errs, fmt.Errorf("\t[Routes] route index %d: %w", i, err))
 		}
 
-		key := strings.ToLower(r.Host) + r.Path
-
-		if prev, exists := seen[key]; exists {
-			errs = append(errs, fmt.Errorf("\t[Routes] route index %d conflicts with route index %d", i, prev))
+		pattern := NormalizeHost(r.Host) + r.Path
+		if err := registerPattern(http.NewServeMux(), pattern); err != nil {
+			continue
 		}
 
-		seen[key] = i
+		if err := registerPattern(mux, pattern); err != nil {
+			errs = append(errs, fmt.Errorf("\t[Routes] route index %d conflicts with another route: %w", i, err))
+		}
 	}
 
 	return errors.Join(errs...)
+}
+
+// Helpers
+
+func registerPattern(mux *http.ServeMux, pattern string) (err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("%v", recovered)
+		}
+	}()
+
+	mux.HandleFunc(pattern, func(http.ResponseWriter, *http.Request) {})
+	return nil
 }

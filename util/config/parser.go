@@ -38,3 +38,9 @@ func BuildURL(route Route) string {
 
 	return target.String()
 }
+
+func NormalizeHost(host string) string {
+	host = strings.TrimSpace(host)
+	host = strings.TrimSuffix(host, ".")
+	return strings.ToLower(host)
+}

@@ -7,7 +7,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/SudiMango/stratus/util/config"
 )
@@ -28,7 +27,8 @@ func main() {
 	allowedHosts := make(map[string]struct{})
 
 	for _, route := range cfg.Routes {
-		allowedHosts[strings.ToLower(route.Host)] = struct{}{}
+		host := config.NormalizeHost(route.Host)
+		allowedHosts[host] = struct{}{}
 		target, err := url.Parse(config.BuildURL(route))
 		if err != nil {
 			log.Fatalf("Invalid target url for %q: %v", route.Path, err)
@@ -40,7 +40,7 @@ func main() {
 				r.SetXForwarded()
 			},
 		}
-		mux.HandleFunc(route.Host+route.Path, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc(host+route.Path, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Proxying request: %s %s %s %s -> %s", r.Method, r.Host, r.URL.Path, r.URL.RawQuery, target.String())
 			proxy.ServeHTTP(w, r)
 		})
@@ -54,7 +54,7 @@ func main() {
 				host = hostname
 			}
 
-			host = strings.ToLower(strings.TrimSuffix(host, "."))
+			host = config.NormalizeHost(host)
 			if _, exists := allowedHosts[host]; !exists {
 				http.Error(w, "unknown host", http.StatusMisdirectedRequest)
 				return
