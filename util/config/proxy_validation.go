@@ -2,8 +2,10 @@ package config
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 func (p Proxy) Validate() error {
@@ -38,6 +40,37 @@ func (p Proxy) Validate() error {
 		errs = append(errs, errors.New("\t[Proxy] Timeout values cannot be less than 0"))
 	}
 
+	for i, c := range p.Certificates {
+		if strings.TrimSpace(c.Host) == "" {
+			errs = append(errs, fmt.Errorf("\t[Proxy] HTTPS certificate host for cert index %d is required", i))
+		}
+
+		if strings.TrimSpace(c.Cert) == "" {
+			errs = append(errs, fmt.Errorf("\t[Proxy] HTTPS certificate path for host %s is required", c.Host))
+		}
+
+		if strings.TrimSpace(c.Key) == "" {
+			errs = append(errs, fmt.Errorf("\t[Proxy] HTTPS key path for host %s is required", c.Host))
+		}
+
+		loadedCert, err := tls.LoadX509KeyPair(c.Cert, c.Key)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("\t[Proxy] Error loading HTTPS cert and key for host %s: %v", c.Host, err))
+			continue
+		}
+
+		x509Cert, err := x509.ParseCertificate(loadedCert.Certificate[0])
+		if err != nil {
+			errs = append(errs, fmt.Errorf("[Proxy] Failed to parse certificate for host %s: %w", c.Host, err))
+			continue
+		}
+
+		if err := x509Cert.VerifyHostname(c.Host); err != nil {
+			errs = append(errs, fmt.Errorf("[Proxy] Certificate %q is not valid for host %q: %w", c.Cert, c.Host, err))
+		}
+
+	}
+
 	errs = append(errs, p.Http.Validate())
 	errs = append(errs, p.Https.Validate())
 
@@ -65,18 +98,6 @@ func (h Https) Validate() error {
 
 	if h.Port < 1 || h.Port > 65535 {
 		errs = append(errs, errors.New("\t[Proxy] HTTPS port must be between 1 and 65535"))
-	}
-
-	if h.Cert == "" {
-		errs = append(errs, errors.New("\t[Proxy] HTTPS certificate path is required"))
-	}
-
-	if h.Key == "" {
-		errs = append(errs, errors.New("\t[Proxy] HTTPS key path is required"))
-	}
-
-	if _, err := tls.LoadX509KeyPair(h.Cert, h.Key); err != nil {
-		errs = append(errs, fmt.Errorf("\t[Proxy] Error loading HTTP cert and key: %v", err))
 	}
 
 	return errors.Join(errs...)

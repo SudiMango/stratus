@@ -13,8 +13,15 @@ proxy:
   https:
     enabled: true
     port: 8443
-    cert: "cert.pem"
-    key: "key.pem"
+
+  certificates:
+    - host: "app.example.com"
+      cert: "cert.pem"
+      key: "key.pem"
+
+    - host: "api.example.com"
+      cert: "cert.pem"
+      key: "key.pem"
 
 routes:
   - host: "app.example.com"

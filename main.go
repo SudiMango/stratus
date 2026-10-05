@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -97,6 +98,16 @@ func main() {
 	}
 
 	if cfg.Proxy.Https.Enabled {
+		var certs []tls.Certificate
+		for _, c := range cfg.Proxy.Certificates {
+			loadedCert, err := tls.LoadX509KeyPair(c.Cert, c.Key)
+			if err != nil {
+				log.Fatalf("Error loading certificate for host %s: %v", c.Host, err)
+			}
+
+			certs = append(certs, loadedCert)
+		}
+
 		httpsServer := &http.Server{
 			Addr:              ":" + strconv.Itoa(cfg.Proxy.Https.Port),
 			Handler:           mux,
@@ -105,10 +116,15 @@ func main() {
 			WriteTimeout:      cfg.Proxy.WriteTimeout,
 			IdleTimeout:       cfg.Proxy.IdleTimeout,
 			MaxHeaderBytes:    cfg.Proxy.MaxHeaderBytes,
+			TLSConfig: &tls.Config{
+				Certificates: certs,
+				MinVersion:   tls.VersionTLS12,
+			},
 		}
 
 		log.Printf("HTTPS proxy running on port %s", strconv.Itoa(cfg.Proxy.Https.Port))
-		if err := httpsServer.ListenAndServeTLS(cfg.Proxy.Https.Cert, cfg.Proxy.Https.Key); err != nil {
+
+		if err := httpsServer.ListenAndServeTLS("", ""); err != nil {
 			log.Fatalf("HTTPS server failed: %v", err)
 		}
 	} else if cfg.Proxy.Http.Enabled {

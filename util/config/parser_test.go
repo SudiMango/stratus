@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,21 @@ func TestGetConfigParsesDurationStrings(t *testing.T) {
 	}
 	if cfg.Proxy.IdleTimeout != 2*time.Minute {
 		t.Errorf("IdleTimeout = %v, want 2m", cfg.Proxy.IdleTimeout)
+	}
+}
+
+func TestGetConfigParsesCertificates(t *testing.T) {
+	cfg, err := config.GetConfig(configFixture("valid.yaml"))
+	if err != nil {
+		t.Fatalf("GetConfig() error = %v", err)
+	}
+
+	want := config.Certificates{
+		{Host: "app.example.com", Cert: "app-cert.pem", Key: "app-key.pem"},
+		{Host: "api.example.com", Cert: "api-cert.pem", Key: "api-key.pem"},
+	}
+	if !reflect.DeepEqual(cfg.Proxy.Certificates, want) {
+		t.Errorf("Certificates = %#v, want %#v", cfg.Proxy.Certificates, want)
 	}
 }
 

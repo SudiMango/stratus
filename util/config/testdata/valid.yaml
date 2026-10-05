@@ -11,8 +11,13 @@ proxy:
   https:
     enabled: false
     port: 0
-    cert: ""
-    key: ""
+  certificates:
+    - host: "app.example.com"
+      cert: "app-cert.pem"
+      key: "app-key.pem"
+    - host: "api.example.com"
+      cert: "api-cert.pem"
+      key: "api-key.pem"
 
 routes:
   - host: "app.example.com"

@@ -12,6 +12,11 @@ import (
 
 func TestProxyValidate(t *testing.T) {
 	certificatePath, keyPath := writeCertificatePair(t)
+	validCertificate := config.Certificate{
+		Host: "app.example.com",
+		Cert: certificatePath,
+		Key:  keyPath,
+	}
 
 	tests := []struct {
 		name        string
@@ -30,8 +35,17 @@ func TestProxyValidate(t *testing.T) {
 				Https: config.Https{
 					Enabled: true,
 					Port:    8443,
-					Cert:    certificatePath,
-					Key:     keyPath,
+				},
+				Certificates: config.Certificates{validCertificate},
+			},
+		},
+		{
+			name: "multiple HTTPS certificates are valid",
+			proxy: config.Proxy{
+				Https: config.Https{Enabled: true, Port: 8443},
+				Certificates: config.Certificates{
+					validCertificate,
+					{Host: "api.example.com", Cert: certificatePath, Key: keyPath},
 				},
 			},
 		},
@@ -54,9 +68,8 @@ func TestProxyValidate(t *testing.T) {
 				Https: config.Https{
 					Enabled: true,
 					Port:    8443,
-					Cert:    certificatePath,
-					Key:     keyPath,
 				},
+				Certificates: config.Certificates{validCertificate},
 			},
 			wantMessage: "redirect",
 		},
@@ -67,9 +80,8 @@ func TestProxyValidate(t *testing.T) {
 				Https: config.Https{
 					Enabled: true,
 					Port:    8443,
-					Cert:    certificatePath,
-					Key:     keyPath,
 				},
+				Certificates: config.Certificates{validCertificate},
 			},
 			wantMessage: "same port",
 		},
@@ -86,9 +98,8 @@ func TestProxyValidate(t *testing.T) {
 				Https: config.Https{
 					Enabled: true,
 					Port:    65536,
-					Cert:    certificatePath,
-					Key:     keyPath,
 				},
+				Certificates: config.Certificates{validCertificate},
 			},
 			wantMessage: "HTTPS port",
 		},
@@ -118,7 +129,7 @@ func TestProxyValidate(t *testing.T) {
 	}
 }
 
-func TestHTTPSValidateCertificateFiles(t *testing.T) {
+func TestProxyValidateCertificates(t *testing.T) {
 	certificatePath, keyPath := writeCertificatePair(t)
 	directory := t.TempDir()
 	invalidKeyPath := filepath.Join(directory, "invalid-key.pem")
@@ -128,43 +139,77 @@ func TestHTTPSValidateCertificateFiles(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		https       config.Https
+		certificate config.Certificate
 		wantMessage string
 	}{
 		{
 			name: "matching certificate and key",
-			https: config.Https{
-				Enabled: true,
-				Port:    8443,
-				Cert:    certificatePath,
-				Key:     keyPath,
+			certificate: config.Certificate{
+				Host: "app.example.com",
+				Cert: certificatePath,
+				Key:  keyPath,
 			},
 		},
 		{
 			name: "certificate file does not exist",
-			https: config.Https{
-				Enabled: true,
-				Port:    8443,
-				Cert:    filepath.Join(t.TempDir(), "missing-cert.pem"),
-				Key:     keyPath,
+			certificate: config.Certificate{
+				Host: "app.example.com",
+				Cert: filepath.Join(t.TempDir(), "missing-cert.pem"),
+				Key:  keyPath,
 			},
 			wantMessage: "certificate",
 		},
 		{
 			name: "private key is malformed",
-			https: config.Https{
-				Enabled: true,
-				Port:    8443,
-				Cert:    certificatePath,
-				Key:     invalidKeyPath,
+			certificate: config.Certificate{
+				Host: "app.example.com",
+				Cert: certificatePath,
+				Key:  invalidKeyPath,
 			},
 			wantMessage: "key",
+		},
+		{
+			name: "host is required",
+			certificate: config.Certificate{
+				Cert: certificatePath,
+				Key:  keyPath,
+			},
+			wantMessage: "host",
+		},
+		{
+			name: "certificate path is required",
+			certificate: config.Certificate{
+				Host: "app.example.com",
+				Key:  keyPath,
+			},
+			wantMessage: "certificate path",
+		},
+		{
+			name: "key path is required",
+			certificate: config.Certificate{
+				Host: "app.example.com",
+				Cert: certificatePath,
+			},
+			wantMessage: "key path",
+		},
+		{
+			name: "certificate must match host",
+			certificate: config.Certificate{
+				Host: "unrelated.test",
+				Cert: certificatePath,
+				Key:  keyPath,
+			},
+			wantMessage: "not valid for host",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.https.Validate()
+			proxy := config.Proxy{
+				Https:        config.Https{Enabled: true, Port: 8443},
+				Certificates: config.Certificates{test.certificate},
+			}
+			err := proxy.Validate()
 			assertValidationResult(t, err, test.wantMessage)
 		})
 	}
