@@ -1,6 +1,10 @@
 package config
 
-import "errors"
+import (
+	"crypto/tls"
+	"errors"
+	"fmt"
+)
 
 func (p Proxy) Validate() error {
 	var errs []error
@@ -65,6 +69,10 @@ func (h Https) Validate() error {
 
 	if h.Key == "" {
 		errs = append(errs, errors.New("\t[Proxy] HTTPS key path is required"))
+	}
+
+	if _, err := tls.LoadX509KeyPair(h.Cert, h.Key); err != nil {
+		errs = append(errs, fmt.Errorf("\t[Proxy] Error loading HTTP cert and key: %v", err))
 	}
 
 	return errors.Join(errs...)
