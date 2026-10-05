@@ -19,6 +19,17 @@ func (p Proxy) Validate() error {
 		errs = append(errs, errors.New("\t[Proxy] HTTP and HTTPS cannot use the same port"))
 	}
 
+	if p.MaxHeaderBytes < 0 {
+		errs = append(errs, errors.New("\t[Proxy] MaxHeaderBytes cannot be less than 0"))
+	}
+
+	if p.ReadTimeout < 0 ||
+		p.ReadHeaderTimeout < 0 ||
+		p.WriteTimeout < 0 ||
+		p.IdleTimeout < 0 {
+		errs = append(errs, errors.New("\t[Proxy] Timeout values cannot be less than 0"))
+	}
+
 	errs = append(errs, p.Http.Validate())
 	errs = append(errs, p.Https.Validate())
 

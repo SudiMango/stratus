@@ -79,16 +79,36 @@ func main() {
 
 	if cfg.Proxy.Http.Enabled {
 		go func() {
+			httpServer := &http.Server{
+				Addr:              ":" + strconv.Itoa(cfg.Proxy.Http.Port),
+				Handler:           httpHandler,
+				ReadTimeout:       cfg.Proxy.ReadTimeout,
+				ReadHeaderTimeout: cfg.Proxy.ReadHeaderTimeout,
+				WriteTimeout:      cfg.Proxy.WriteTimeout,
+				IdleTimeout:       cfg.Proxy.IdleTimeout,
+				MaxHeaderBytes:    cfg.Proxy.MaxHeaderBytes,
+			}
+
 			log.Printf("HTTP proxy running on port %s", strconv.Itoa(cfg.Proxy.Http.Port))
-			if err := http.ListenAndServe(":"+strconv.Itoa(cfg.Proxy.Http.Port), httpHandler); err != nil {
+			if err := httpServer.ListenAndServe(); err != nil {
 				log.Fatalf("HTTP server failed: %v", err)
 			}
 		}()
 	}
 
 	if cfg.Proxy.Https.Enabled {
+		httpsServer := &http.Server{
+			Addr:              ":" + strconv.Itoa(cfg.Proxy.Https.Port),
+			Handler:           mux,
+			ReadTimeout:       cfg.Proxy.ReadTimeout,
+			ReadHeaderTimeout: cfg.Proxy.ReadHeaderTimeout,
+			WriteTimeout:      cfg.Proxy.WriteTimeout,
+			IdleTimeout:       cfg.Proxy.IdleTimeout,
+			MaxHeaderBytes:    cfg.Proxy.MaxHeaderBytes,
+		}
+
 		log.Printf("HTTPS proxy running on port %s", strconv.Itoa(cfg.Proxy.Https.Port))
-		if err := http.ListenAndServeTLS(":"+strconv.Itoa(cfg.Proxy.Https.Port), cfg.Proxy.Https.Cert, cfg.Proxy.Https.Key, mux); err != nil {
+		if err := httpsServer.ListenAndServeTLS(cfg.Proxy.Https.Cert, cfg.Proxy.Https.Key); err != nil {
 			log.Fatalf("HTTPS server failed: %v", err)
 		}
 	} else if cfg.Proxy.Http.Enabled {
