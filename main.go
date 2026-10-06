@@ -1,13 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/SudiMango/stratus/util/config"
 )
@@ -18,9 +18,9 @@ func main() {
 		log.Fatalf("Error loading config file: %v", err)
 	}
 
-	err = config.ValidateConfig(cfg)
+	err = cfg.Validate()
 	if err != nil {
-		log.Fatalf("Error validating config: %v", err)
+		log.Fatalf("Error validating config: \n%v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -28,7 +28,8 @@ func main() {
 	allowedHosts := make(map[string]struct{})
 
 	for _, route := range cfg.Routes {
-		allowedHosts[strings.ToLower(route.Host)] = struct{}{}
+		host := config.NormalizeHost(route.Host)
+		allowedHosts[host] = struct{}{}
 		target, err := url.Parse(config.BuildURL(route))
 		if err != nil {
 			log.Fatalf("Invalid target url for %q: %v", route.Path, err)
@@ -40,7 +41,7 @@ func main() {
 				r.SetXForwarded()
 			},
 		}
-		mux.HandleFunc(route.Host+route.Path, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc(host+route.Path, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Proxying request: %s %s %s %s -> %s", r.Method, r.Host, r.URL.Path, r.URL.RawQuery, target.String())
 			proxy.ServeHTTP(w, r)
 		})
@@ -54,7 +55,7 @@ func main() {
 				host = hostname
 			}
 
-			host = strings.ToLower(strings.TrimSuffix(host, "."))
+			host = config.NormalizeHost(host)
 			if _, exists := allowedHosts[host]; !exists {
 				http.Error(w, "unknown host", http.StatusMisdirectedRequest)
 				return
@@ -79,16 +80,51 @@ func main() {
 
 	if cfg.Proxy.Http.Enabled {
 		go func() {
+			httpServer := &http.Server{
+				Addr:              ":" + strconv.Itoa(cfg.Proxy.Http.Port),
+				Handler:           httpHandler,
+				ReadTimeout:       cfg.Proxy.ReadTimeout,
+				ReadHeaderTimeout: cfg.Proxy.ReadHeaderTimeout,
+				WriteTimeout:      cfg.Proxy.WriteTimeout,
+				IdleTimeout:       cfg.Proxy.IdleTimeout,
+				MaxHeaderBytes:    cfg.Proxy.MaxHeaderBytes,
+			}
+
 			log.Printf("HTTP proxy running on port %s", strconv.Itoa(cfg.Proxy.Http.Port))
-			if err := http.ListenAndServe(":"+strconv.Itoa(cfg.Proxy.Http.Port), httpHandler); err != nil {
+			if err := httpServer.ListenAndServe(); err != nil {
 				log.Fatalf("HTTP server failed: %v", err)
 			}
 		}()
 	}
 
 	if cfg.Proxy.Https.Enabled {
+		var certs []tls.Certificate
+		for _, c := range cfg.Proxy.Certificates {
+			loadedCert, err := tls.LoadX509KeyPair(c.Cert, c.Key)
+			if err != nil {
+				log.Fatalf("Error loading certificate for host %s: %v", c.Host, err)
+			}
+
+			certs = append(certs, loadedCert)
+		}
+
+		httpsServer := &http.Server{
+			Addr:              ":" + strconv.Itoa(cfg.Proxy.Https.Port),
+			Handler:           mux,
+			ReadTimeout:       cfg.Proxy.ReadTimeout,
+			ReadHeaderTimeout: cfg.Proxy.ReadHeaderTimeout,
+			WriteTimeout:      cfg.Proxy.WriteTimeout,
+			IdleTimeout:       cfg.Proxy.IdleTimeout,
+			MaxHeaderBytes:    cfg.Proxy.MaxHeaderBytes,
+			TLSConfig: &tls.Config{
+				Certificates: certs,
+				MinVersion:   tls.VersionTLS12,
+			},
+		}
+
 		log.Printf("HTTPS proxy running on port %s", strconv.Itoa(cfg.Proxy.Https.Port))
-		if err := http.ListenAndServeTLS(":"+strconv.Itoa(cfg.Proxy.Https.Port), cfg.Proxy.Https.Cert, cfg.Proxy.Https.Key, mux); err != nil {
+
+		if err := httpsServer.ListenAndServeTLS("", ""); err != nil {
 			log.Fatalf("HTTPS server failed: %v", err)
 		}
 	} else if cfg.Proxy.Http.Enabled {

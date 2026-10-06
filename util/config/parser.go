@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"strconv"
 	"strings"
@@ -24,18 +23,6 @@ func GetConfig(file_path string) (*Config, error) {
 	return &cfg, nil
 }
 
-func ValidateConfig(cfg *Config) error {
-	if cfg.Proxy.Http.Enabled == false && cfg.Proxy.Https.Enabled == false {
-		return errors.New("Http and Https are both disabled. Please enable at least 1.")
-	}
-
-	if cfg.Proxy.Https.Enabled == false && cfg.Proxy.Http.RedirectToHttps == true {
-		return errors.New("Cannot redirect to https when https is not enabled.")
-	}
-
-	return nil
-}
-
 func BuildURL(route Route) string {
 	var target strings.Builder
 
@@ -50,4 +37,10 @@ func BuildURL(route Route) string {
 	target.WriteString(strconv.Itoa(route.Port))
 
 	return target.String()
+}
+
+func NormalizeHost(host string) string {
+	host = strings.TrimSpace(host)
+	host = strings.TrimSuffix(host, ".")
+	return strings.ToLower(host)
 }

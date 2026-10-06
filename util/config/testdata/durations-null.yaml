@@ -1,0 +1,12 @@
+proxy:
+  read_timeout: null
+  read_header_timeout: null
+  write_timeout: null
+  idle_timeout: null
+  http:
+    enabled: true
+    port: 8080
+  https:
+    enabled: false
+
+routes: []

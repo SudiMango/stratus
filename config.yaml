@@ -1,4 +1,10 @@
 proxy:
+  read_timeout: "30s"
+  read_header_timeout: "5s"
+  write_timeout: "30s"
+  idle_timeout: "1m"
+  max_header_bytes: 1048576
+
   http:
     enabled: true
     port: 8880
@@ -7,8 +13,15 @@ proxy:
   https:
     enabled: true
     port: 8443
-    cert: "cert.pem"
-    key: "key.pem"
+
+  certificates:
+    - host: "app.example.com"
+      cert: "cert.pem"
+      key: "key.pem"
+
+    - host: "api.example.com"
+      cert: "cert.pem"
+      key: "key.pem"
 
 routes:
   - host: "app.example.com"
@@ -20,7 +33,7 @@ routes:
   - host: "app.example.com"
     destination: "localhost"
     port: 4000
-    path: "/test"
+    path: "/test/{rest...}"
     tls: false
 
   - host: "api.example.com"
