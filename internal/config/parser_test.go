@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SudiMango/stratus/util/config"
+	"github.com/SudiMango/stratus/internal/config"
 )
 
 func TestGetConfigParsesDurationStrings(t *testing.T) {

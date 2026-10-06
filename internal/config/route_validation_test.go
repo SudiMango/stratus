@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/SudiMango/stratus/util/config"
+	"github.com/SudiMango/stratus/internal/config"
 )
 
 func TestRouteValidate(t *testing.T) {

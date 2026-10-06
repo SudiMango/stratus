@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SudiMango/stratus/util/config"
+	"github.com/SudiMango/stratus/internal/config"
 )
 
 func TestConfigValidateAggregatesProxyAndRouteErrors(t *testing.T) {
