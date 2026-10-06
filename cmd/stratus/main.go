@@ -9,11 +9,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/SudiMango/stratus/util/config"
+	"github.com/SudiMango/stratus/internal/config"
 )
 
 func main() {
-	cfg, err := config.GetConfig("config.yaml")
+	cfg, err := config.GetConfig("./internal/examples/config.yaml")
 	if err != nil {
 		log.Fatalf("Error loading config file: %v", err)
 	}

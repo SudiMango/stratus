@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SudiMango/stratus/util/config"
+	"github.com/SudiMango/stratus/internal/config"
 )
 
 func TestProxyValidate(t *testing.T) {
